@@ -1,0 +1,6 @@
+.env
+.pyirc
+
+build/
+dist/
+__pycache__/

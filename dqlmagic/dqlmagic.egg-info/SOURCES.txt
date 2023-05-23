@@ -1,0 +1,12 @@
+pyproject.toml
+readme.md
+setup.cfg
+setup.py
+dqlmagic/__init__.py
+dqlmagic/dqlmagic.py
+dqlmagic.egg-info/PKG-INFO
+dqlmagic.egg-info/SOURCES.txt
+dqlmagic.egg-info/dependency_links.txt
+dqlmagic.egg-info/requires.txt
+dqlmagic.egg-info/top_level.txt
+dqlmagic.egg-info/zip-safe
