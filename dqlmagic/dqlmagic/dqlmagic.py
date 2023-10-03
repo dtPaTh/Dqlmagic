@@ -17,19 +17,18 @@ class DQLmagic(Magics):
     oauth_clientsecret = None
     oauth_scope = None
 
-    grail_apiurl = None
     access_token = None
-    
+    grail_apiurl = None
     dt_tenant = None
-    dt_app_context = None
+    
+    dql_default_query_timespan_minutes = None
+    dql_default_scanlimit_gbytes = None
+    dql_max_result_records = None
 
-    isPlatformAPI = False
-
-    dql_default_query_timespan_minutes = 8*60
 
     def get_bearer(self):
         
-        if (self.oauth_url is None or self.oauth_clientid is None or self.oauth_clientsecret is None or self.oauth_scope is None or self.oauth_scope is None): 
+        if (self.oauth_url is None or self.oauth_clientid is None or self.oauth_clientsecret is None or self.oauth_scope is None): 
             self.access_token = None
         else:
             payload = "grant_type=client_credentials&client_id="+self.oauth_clientid+"&client_secret="+self.oauth_clientsecret+"&scope="+self.oauth_scope
@@ -73,12 +72,18 @@ class DQLmagic(Magics):
 
         self.grail_apiurl = os.getenv(self.config_prefix+'grail_apiurl')
         self.dt_tenant = os.getenv(self.config_prefix+"dt_tenant")
-        self.dt_app_context = os.getenv(self.config_prefix+"dt_app_context")
-        queryTimespan = os.getenv('dql_default_query_timespan_minutes')
-        if queryTimespan != None: self.dql_default_query_timespan_minutes = int(queryTimespan)
-
+        
         if (self.grail_apiurl is None): return "Missing connection parameter 'grail_apiurl'"
         if (self.dt_tenant is None): return "Missing connection parameter 'dt_tenant'"
+
+        optCfg = os.getenv('dql_default_query_timespan_minutes')
+        if optCfg != None: self.dql_default_query_timespan_minutes = int(optCfg)
+
+        optCfg = os.getenv('dql_default_scanlimit_gbytes')
+        if optCfg != None: self.dql_default_scanlimit_gbytes = int(optCfg)
+
+        optCfg = os.getenv('dql_max_result_records')
+        if optCfg != None: self.dql_max_result_records= int(optCfg)
 
         
         self.get_bearer()
@@ -133,22 +138,25 @@ class DQLmagic(Magics):
                 "Authorization":"Bearer "+self.access_token,
                 "dt-tenant": self.dt_tenant
             }
-        
-            now = datetime.datetime.utcnow()
 
             body = {
                 "query": dql,
-                "defaultTimeframeStart": (now - timedelta(minutes=self.dql_default_query_timespan_minutes)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                "defaultTimeframeEnd": now.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 "timezone": "UTC",
                 "locale": "en_US",
-                "maxResultRecords": 1000,
-                "fetchTimeoutSeconds": 60,
                 "requestTimeoutMilliseconds": 1000,
-                "enablePreview": True,
-                "defaultSamplingRatio": 1000,
-                "defaultScanLimitGbytes": 250
+                "enablePreview": True
             }
+
+            if (self.dql_default_query_timespan_minutes != None): 
+                now = datetime.datetime.utcnow()
+                body["defaultTimeframeStart"] = (now - timedelta(minutes=self.dql_default_query_timespan_minutes)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                body["defaultTimeframeEnd"] = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            
+            if (self.dql_default_scanlimit_gbytes != None): 
+                body["defaultScanLimitGbytes"] = self.dql_default_scanlimit_gbytes
+
+            if (self.dql_max_result_records != None): 
+                body["maxResultRecords"] = self.dql_max_result_records
             
             response = requests.request("POST", self.grail_apiurl+"query:execute", headers=headers, params=queryParams, json=body)
             if(response.status_code == 200):
@@ -163,7 +171,7 @@ class DQLmagic(Magics):
                 polling_interval = 1
 
                 while True:
-                    statusResponse = requests.get(self.grail_apiurl+"query:poll", params=statusQueryParams)
+                    statusResponse = requests.get(self.grail_apiurl+"query:poll", headers=headers, params=statusQueryParams)
 
                     if statusResponse.status_code == 200:
                         status_update = statusResponse.json()["state"]

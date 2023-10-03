@@ -91,6 +91,20 @@ If you are new to Jupyter notebooks, I recommend getting started using [Jupyter 
 2. Create and configure .env file as described above.
 3. Start using [Getting-Started Notebook](examples/getting-started.ipynb) within [examples/](examples/readme.md) to get familiar using Dqlmagic.
 
+### Advanced configuration in .env
+
+```
+#Applies a default query timeframe from current time - X minutes
+#Note that if a timeframe is specified within the DQL query string then it has precedence over this parameter.
+#dql_default_query_timespan_minutes=720
+
+#Applies a default scan limit in gigabytes to your queries
+#dql_default_scanlimit_gbytes=250
+
+#Applies a maxium number of records returned by your queries
+#dql_max_result_records=1000
+```
+
 ## Contribute
 This is an open source project, and we gladly accept new contributions and contributors.  
 
