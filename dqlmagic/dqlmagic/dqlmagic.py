@@ -115,8 +115,11 @@ class DQLmagic(Magics):
                 self.shell.user_ns.update({line: records})
             else:
                 self.shell.user_ns.update({"_dql_result": records})
-        
-        return records
+            
+            if records:
+                return str(len(records))+" records returned"
+        else:
+            return records
 
     @line_magic
     def dql_raw(self, line):
