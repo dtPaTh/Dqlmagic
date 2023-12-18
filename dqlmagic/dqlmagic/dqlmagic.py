@@ -104,11 +104,19 @@ class DQLmagic(Magics):
     @line_cell_magic
     def dql(self, line, cell=None):
         res = self.dql_raw(line,cell)
+        
+        records = None
         if res:
             jdata = json.loads(res)
-            return jdata["result"]["records"]
-        else:
-            return None
+            records = jdata["result"]["records"]
+        
+        if self.shell.user_ns and len(cell) > 0: 
+            if line and not line.isspace():
+                self.shell.user_ns.update({line: records})
+            else:
+                self.shell.user_ns.update({"_dql_result": records})
+        
+        return records
 
     @line_magic
     def dql_raw(self, line):
@@ -125,9 +133,10 @@ class DQLmagic(Magics):
             return "Not authorized. Log in via '%auth_grail <...>"
         else : 
 
-            dql=line
-            if cell is not None:
+            if cell:
                 dql = cell
+            else:
+                dql = line
         
             queryParams = {
                 "enrich":"metric-metadata"
@@ -162,7 +171,7 @@ class DQLmagic(Magics):
             if(response.status_code == 200):
                 return response.text
             elif (response.status_code == 202):
-                print ("Start polling query updates..")                
+                print ("Start polling results..", end="\r")                
                 statusQueryParams = {
                     "request-token": response.json()["requestToken"],
                     "enrich":"metric-metadata"
@@ -174,10 +183,12 @@ class DQLmagic(Magics):
                     statusResponse = requests.get(self.grail_apiurl+"query:poll", headers=headers, params=statusQueryParams)
 
                     if statusResponse.status_code == 200:
-                        status_update = statusResponse.json()["state"]
+                        resJson = statusResponse.json()
+                        status_update = resJson["state"]
                         if status_update == "SUCCEEDED":
                             return statusResponse.text
                         else: 
+                            print ("Query in progress.. "+str(resJson["progress"])+"%", end="\r")                
                             time.sleep(polling_interval)
                     else: 
                         return '{"result":{"records":[{"ERROR":"Failed to poll query result ('+str(statusResponse.status_code)+')"}]}}'

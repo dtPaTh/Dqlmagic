@@ -8,17 +8,44 @@ Dqlmagic makes DQL queries available to be used in jupyter notebooks.
 
 ## Available magic functions
 
-### dql <dql_query>
-Allows to run a DQL query and returns the response records as json array.
+### %%dql or %dql
+Executes a DQL query and returns the queried records as json array.
 
-Available as inline and cell function. 
+### Example 1
+Query in code-cell..
+```
+%%dql
+fetch logs 
+| limit 10
+```
+.. and use result in another code cell:
+```
+import pandas as pd
 
-### dql_raw <dql_query>
-Allows to run a DQL query and returns the response in raw json format as provided by the api.
+#put result into a dataframe
+df = pd.DataFrame(_dql_result)
+df.head()
+```
+**Note:** 
+By default ``%%dql`` writes into ``_dql_result``. You can optionally customize the target objects name to configure an alternative name like this: 
+```
+%%dql my_result
+fetch logs | limit 10
+```
 
-Available as inline and cell function. 
+### Example 2 - Inline Query
+```
+import pandas as pd
 
-### auth_grail <config_prefix>
+res = %dql fetch logs | limit 10
+df = pd.DataFrame(res)
+df.head()
+```
+
+### %dql_raw and %%dql_raw
+Same as ```%dql``` or ```%%dql```, but returns instead of the result records the full API response json
+
+### %auth_grail <config_prefix>
 Inline function connecting to the grail cluster. 
 
 Reads connection parameters from .env file: 
