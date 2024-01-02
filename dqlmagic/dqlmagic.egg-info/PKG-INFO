@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: dqlmagic
-Version: 1.2.1
+Version: 1.2.4
 Summary: IPython magic function for Dynatrace Query Language (DQL)
 Home-page: https://github.com/dtPaTh/Dqlmagic
 Author: Patrick Thurner

@@ -28,7 +28,7 @@ class DQLmagic(Magics):
 
     def get_bearer(self):
         
-        if (self.oauth_url is None or self.oauth_clientid is None or self.oauth_clientsecret is None or self.oauth_scope is None): 
+        if self.oauth_url is None or self.oauth_clientid is None or self.oauth_clientsecret is None or self.oauth_scope is None: 
             self.access_token = None
         else:
             payload = "grant_type=client_credentials&client_id="+self.oauth_clientid+"&client_secret="+self.oauth_clientsecret+"&scope="+self.oauth_scope
@@ -53,8 +53,7 @@ class DQLmagic(Magics):
         
         cfgPrefix = os.getenv('dt_config_prefix')
 
-        if len(line)>0: 
-            cfgPrefix=line.strip()
+        if len(line)>0: cfgPrefix=line.strip()
 
         if cfgPrefix==None: cfgPrefix=''
         else: cfgPrefix+='_'
@@ -65,16 +64,16 @@ class DQLmagic(Magics):
         self.oauth_clientsecret = os.getenv(self.config_prefix+'dt_oauth_clientsecret')
         self.oauth_scope = os.getenv(self.config_prefix+'dt_oauth_scope')
         
-        if (self.oauth_url is None): return "Missing connection parameter 'dt_oauth_url'"
-        if (self.oauth_clientid is None): return "Missing connection parameter 'oauth_clientid'"
-        if (self.oauth_clientsecret is None): return "Missing connection parameter 'oauth_clientsecret'"
-        if (self.oauth_scope is None): return "Missing connection parameter 'oauth_scope'"
+        if self.oauth_url is None: return "Missing connection parameter 'dt_oauth_url'"
+        if self.oauth_clientid is None: return "Missing connection parameter 'oauth_clientid'"
+        if self.oauth_clientsecret is None: return "Missing connection parameter 'oauth_clientsecret'"
+        if self.oauth_scope is None: return "Missing connection parameter 'oauth_scope'"
 
         self.grail_apiurl = os.getenv(self.config_prefix+'grail_apiurl')
         self.dt_tenant = os.getenv(self.config_prefix+"dt_tenant")
         
-        if (self.grail_apiurl is None): return "Missing connection parameter 'grail_apiurl'"
-        if (self.dt_tenant is None): return "Missing connection parameter 'dt_tenant'"
+        if self.grail_apiurl is None: return "Missing connection parameter 'grail_apiurl'"
+        if self.dt_tenant is None: return "Missing connection parameter 'dt_tenant'"
 
         optCfg = os.getenv('dql_default_query_timespan_minutes')
         if optCfg != None: self.dql_default_query_timespan_minutes = int(optCfg)
@@ -88,7 +87,7 @@ class DQLmagic(Magics):
         
         self.get_bearer()
 
-        if (self.access_token is None):
+        if self.access_token is None:
             return "Couldn't successfully authenticate"
         else:
             return "Successfully authenticated"
@@ -132,14 +131,12 @@ class DQLmagic(Magics):
     @line_cell_magic
     def dql_raw(self, line, cell=None):
 
-        if (self.get_bearer() is None):
+        if self.get_bearer() is None:
             return "Not authorized. Log in via '%auth_grail <...>"
-        else : 
+        else: 
 
-            if cell:
-                dql = cell
-            else:
-                dql = line
+            if cell: dql = cell
+            else: dql = line
         
             queryParams = {
                 "enrich":"metric-metadata"
@@ -159,44 +156,57 @@ class DQLmagic(Magics):
                 "enablePreview": True
             }
 
-            if (self.dql_default_query_timespan_minutes != None): 
+            if self.dql_default_query_timespan_minutes != None: 
                 now = datetime.datetime.utcnow()
                 body["defaultTimeframeStart"] = (now - timedelta(minutes=self.dql_default_query_timespan_minutes)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["defaultTimeframeEnd"] = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             
-            if (self.dql_default_scanlimit_gbytes != None): 
+            if self.dql_default_scanlimit_gbytes != None: 
                 body["defaultScanLimitGbytes"] = self.dql_default_scanlimit_gbytes
 
-            if (self.dql_max_result_records != None): 
+            if self.dql_max_result_records != None: 
                 body["maxResultRecords"] = self.dql_max_result_records
             
             response = requests.request("POST", self.grail_apiurl+"query:execute", headers=headers, params=queryParams, json=body)
-            if(response.status_code == 200):
+            if response.status_code == 200:
                 return response.text
-            elif (response.status_code == 202):
-                print ("Start polling results..", end="\r")                
+            elif response.status_code == 202:
+                print("Start polling results..         ", end="\r")                
                 statusQueryParams = {
                     "request-token": response.json()["requestToken"],
                     "enrich":"metric-metadata"
                     }
 
                 polling_interval = 1
-
+                inc = 0
                 while True:
                     statusResponse = requests.get(self.grail_apiurl+"query:poll", headers=headers, params=statusQueryParams)
 
                     if statusResponse.status_code == 200:
                         resJson = statusResponse.json()
                         status_update = resJson["state"]
+                       
                         if status_update == "SUCCEEDED":
+                            print("Query finished!                 ", end="\r\n") 
+                            results = resJson.get("result")
+                            if results:
+                                metadata = results.get("metadata")
+                                if metadata:
+                                    meta_grail = metadata.get("grail")
+                                    if meta_grail: 
+                                        notifications = meta_grail.get("notifications")
+                                        for n in notifications:
+                                            print(n["severity"]+" - "+n["message"])
                             return statusResponse.text
                         else: 
-                            print ("Query in progress.. "+str(resJson["progress"])+"%", end="\r")                
+                            if resJson.get("progress"):
+                                print("Query in progress.. "+str(resJson["progress"])+"%             ", end="\r")                
+                            else:
+                                spinner = "|" if inc%4==1 else "/" if inc%4==2 else "-" if inc%4==3 else "\\"
+                                print("Query in progress.. "+spinner+"            ", end="\r")                
+                                inc+=1
                             time.sleep(polling_interval)
                     else: 
                         return '{"result":{"records":[{"ERROR":"Failed to poll query result ('+str(statusResponse.status_code)+')"}]}}'
-                    
             else:
                 return '{"result":{"records":[{"ERROR":"Failed to execute query ('+str(response.status_code)+')"}]}}'
-    
-        
