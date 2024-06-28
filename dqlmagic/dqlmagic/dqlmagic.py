@@ -24,6 +24,7 @@ class DQLmagic(Magics):
     dql_default_query_timespan_minutes = None
     dql_default_scanlimit_gbytes = None
     dql_max_result_records = None
+    dql_fetch_timeout_seconds = None
 
 
     def get_bearer(self):
@@ -84,6 +85,9 @@ class DQLmagic(Magics):
         optCfg = os.getenv('dql_max_result_records')
         if optCfg != None: self.dql_max_result_records= int(optCfg)
 
+        optCfg = os.getenv('dql_fetch_timeout_seconds')
+        if optCfg != None: self.dql_fetch_timeout_seconds= int(optCfg)
+
         
         self.get_bearer()
 
@@ -109,7 +113,7 @@ class DQLmagic(Magics):
             jdata = json.loads(res)
             records = jdata["result"]["records"]
         
-        if self.shell.user_ns and len(cell) > 0: 
+        if self.shell.user_ns and cell is not None: 
             if line and not line.isspace():
                 self.shell.user_ns.update({line: records})
             else:
@@ -167,6 +171,9 @@ class DQLmagic(Magics):
             if self.dql_max_result_records != None: 
                 body["maxResultRecords"] = self.dql_max_result_records
             
+            if self.dql_fetch_timeout_seconds != None: 
+                body["fetchTimeoutSeconds"] = self.dql_fetch_timeout_seconds
+
             response = requests.request("POST", self.grail_apiurl+"query:execute", headers=headers, params=queryParams, json=body)
             if response.status_code == 200:
                 return response.text
