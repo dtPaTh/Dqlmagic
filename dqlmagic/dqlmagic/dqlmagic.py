@@ -113,14 +113,16 @@ class DQLmagic(Magics):
             jdata = json.loads(res)
             records = jdata["result"]["records"]
         
-        if self.shell.user_ns and cell is not None: 
+        if getattr(self, "shell", None) is not None and getattr(self.shell, "user_ns", None) is not None and cell is not None:
             if line and not line.isspace():
                 self.shell.user_ns.update({line: records})
             else:
                 self.shell.user_ns.update({"_dql_result": records})
             
-            if records:
-                return str(len(records))+" records returned"
+            if isinstance(records, (list, tuple, set, dict)):  
+                return str(len(records)) + " records returned"
+            else:
+                return "0 records returned"
         else:
             return records
 
