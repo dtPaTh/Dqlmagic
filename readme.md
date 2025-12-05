@@ -13,6 +13,9 @@ While the Dynatrace platform provides an OOTB support for notebooks with an easy
 ### Example - Analyze cloud region usage, plotting public cloud regions (external data-source) on a world-map VS used cloud-regions based.
 ![](images/example-worldmap.png)
 
+### Example - Trace analysis with flame-graphs
+![](images/example-trace-flamegraph.png)
+
 
 ## Available magic functions
 
