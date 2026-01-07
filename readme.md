@@ -1,6 +1,7 @@
 # Dqlmagic
+[![PyPi Version](https://img.shields.io/pypi/v/dqlmagic.svg)](https://pypi.org/project/dqlmagic/)
 
-Dqlmagic is an IPython [magic function](https://jakevdp.github.io/PythonDataScienceHandbook/01.03-magic-commands.html) allowing to use DQL in your [Jupyter notebooks](https://jupyter.org/).
+Dqlmagic is an IPython [magic command](https://jakevdp.github.io/PythonDataScienceHandbook/01.03-magic-commands.html) enabling a very easy way to execute Dynatrace DQL queries in your [Jupyter notebooks](https://jupyter.org/).
 
 [Dynatrace Query Language (DQL)](https://www.dynatrace.com/support/help/platform/grail/dynatrace-query-language) is a powerful tool to explore your data and discover patterns, identify anomalies and outliers, create statistical modeling, and more based on data stored in Dynatrace Grail storage. 
 
